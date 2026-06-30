@@ -12,6 +12,9 @@ export default function Home() {
   const [explanation, setExplanation] = useState("");
   const [loadingExplanation, setLoadingExplanation] = useState(false);
   const [correctMove, setCorrectMove] = useState("");
+  const [splitHand, setSplitHand] = useState([]);
+  const [activeSplit, setActiveSplit] = useState(false);
+  const [playingSplitHand, setPlayingSplitHand] = useState(false);
 
   function startGame() {
     const newDeck = shuffleDeck(createDeck());
@@ -26,6 +29,9 @@ export default function Home() {
     setMessage("");
     setExplanation("");
     setCorrectMove("");
+    setSplitHand([]);
+    setActiveSplit(false);
+    setPlayingSplitHand(false);
 
     const move = getCorrectMove(playerCards, dealerCards[0]);
     setCorrectMove(move);
@@ -53,24 +59,48 @@ export default function Home() {
   }
 
   function hit() {
+    setExplanation("");
     const newCard = deck[0];
     const newDeck = deck.slice(1);
-    const newHand = [...playerHand, newCard];
-    setDeck(newDeck);
-    setPlayerHand(newHand);
 
-    if (isBust(newHand)) {
-      setMessage("Bust! You lose.");
-      setGameState("done");
-      return;
+    if (activeSplit && playingSplitHand) {
+      const newHand = [...splitHand, newCard];
+      setSplitHand(newHand);
+      setDeck(newDeck);
+      if (isBust(newHand)) {
+        setMessage("Bust on split hand! Dealer wins.");
+        setGameState("done");
+        return;
+      }
+      const move = getCorrectMove(newHand, dealerHand[0]);
+      setCorrectMove(move);
+    } else {
+      const newHand = [...playerHand, newCard];
+      setPlayerHand(newHand);
+      setDeck(newDeck);
+      if (isBust(newHand)) {
+        if (activeSplit) {
+          setMessage("Bust on first hand! Moving to split hand.");
+          setPlayingSplitHand(true);
+          const move = getCorrectMove(splitHand, dealerHand[0]);
+          setCorrectMove(move);
+        } else {
+          setMessage("Bust! You lose.");
+          setGameState("done");
+        }
+        return;
+      }
+      const move = getCorrectMove(newHand, dealerHand[0]);
+      setCorrectMove(move);
     }
-
-    const move = getCorrectMove(newHand, dealerHand[0]);
-    setCorrectMove(move);
-    fetchExplanation(newHand, dealerHand[0], move);
   }
 
   function stand() {
+    if (activeSplit && !playingSplitHand) {
+      standSplit();
+      return;
+    }
+
     let dealerCards = [...dealerHand];
     let remainingDeck = [...deck];
 
@@ -82,18 +112,48 @@ export default function Home() {
     setDealerHand(dealerCards);
     setDeck(remainingDeck);
 
-    const playerValue = getHandValue(playerHand);
     const dealerValue = getHandValue(dealerCards);
 
-    if (dealerValue > 21 || playerValue > dealerValue) {
-      setMessage("You win!");
-    } else if (playerValue === dealerValue) {
-      setMessage("Push — it's a tie!");
+    if (activeSplit) {
+      const hand1Value = getHandValue(playerHand);
+      const hand2Value = getHandValue(splitHand);
+      const hand1Result = dealerValue > 21 || hand1Value > dealerValue ? "Win" : hand1Value === dealerValue ? "Push" : "Lose";
+      const hand2Result = dealerValue > 21 || hand2Value > dealerValue ? "Win" : hand2Value === dealerValue ? "Push" : "Lose";
+      setMessage(`Hand 1: ${hand1Result} | Hand 2: ${hand2Result}`);
     } else {
-      setMessage("Dealer wins.");
+      const playerValue = getHandValue(playerHand);
+      if (dealerValue > 21 || playerValue > dealerValue) {
+        setMessage("You win!");
+      } else if (playerValue === dealerValue) {
+        setMessage("Push — it's a tie!");
+      } else {
+        setMessage("Dealer wins.");
+      }
     }
 
     setGameState("done");
+  }
+
+  function split() {
+    setExplanation("");
+    const hand1 = [playerHand[0], deck[0]];
+    const hand2 = [playerHand[1], deck[1]];
+    const newDeck = deck.slice(2);
+
+    setPlayerHand(hand1);
+    setSplitHand(hand2);
+    setDeck(newDeck);
+    setActiveSplit(true);
+
+    const move = getCorrectMove(hand1, dealerHand[0]);
+    setCorrectMove(move);
+  }
+
+  function standSplit() {
+    setExplanation("");
+    setPlayingSplitHand(true);
+    const move = getCorrectMove(splitHand, dealerHand[0]);
+    setCorrectMove(move);
   }
 
   function renderCard(card) {
@@ -126,12 +186,26 @@ export default function Home() {
         </div>
       )}
 
-      {/* Player Hand */}
+      {/* Player Hand(s) */}
       {playerHand.length > 0 && (
         <div className="flex flex-col items-center gap-2">
-          <p className="text-green-200 text-sm uppercase tracking-wide">You — {getHandValue(playerHand)}</p>
+          <p className="text-green-200 text-sm uppercase tracking-wide">
+            {activeSplit ? (playingSplitHand ? "Hand 1 (done)" : "Hand 1 (active)") : `You — ${getHandValue(playerHand)}`}
+          </p>
           <div className="flex gap-2">
             {playerHand.map(renderCard)}
+          </div>
+        </div>
+      )}
+
+      {/* Split Hand */}
+      {activeSplit && splitHand.length > 0 && (
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-green-200 text-sm uppercase tracking-wide">
+            {playingSplitHand ? `Hand 2 (active) — ${getHandValue(splitHand)}` : "Hand 2 (waiting)"}
+          </p>
+          <div className="flex gap-2 opacity-75">
+            {splitHand.map(renderCard)}
           </div>
         </div>
       )}
@@ -176,6 +250,9 @@ export default function Home() {
           <>
             <button onClick={hit} className="bg-white hover:bg-gray-100 text-gray-900 font-bold py-3 px-6 rounded-xl">Hit</button>
             <button onClick={stand} className="bg-white hover:bg-gray-100 text-gray-900 font-bold py-3 px-6 rounded-xl">Stand</button>
+            {correctMove === "SP" && !activeSplit && (
+              <button onClick={split} className="bg-purple-500 hover:bg-purple-400 text-white font-bold py-3 px-6 rounded-xl">Split</button>
+            )}
           </>
         )}
       </div>
