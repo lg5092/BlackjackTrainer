@@ -218,7 +218,7 @@ export default function Home() {
               onClick={() => fetchExplanation(playerHand, dealerHand[0], correctMove)}
               className="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-6 rounded-xl"
             >
-              💡 Get Advice
+              Get Advice
             </button>
           )}
           {loadingExplanation && (
