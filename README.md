@@ -4,7 +4,7 @@ Live link: https://blackjack-trainer-sepia.vercel.app/
 
 A simulated blackjack trainer that teaches beginners a basic, optimal strategy using AI-generated explanations.
 
-##Features
+## Features
 
 - Complete blackjack game logic including hit, stand and split actions (currently implementing double down functions)
 - Basic game engine that covers hard hands, soft hands and pair splitting
