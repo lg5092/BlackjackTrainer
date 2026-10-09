@@ -1,3 +1,5 @@
+Live link: https://blackjack-trainer-sepia.vercel.app/ 
+
 # AI-Integrated Blackjack Strategy Trainer
 
 A simulated blackjack trainer that teaches beginners a basic, optimal strategy using AI-generated explanations.
