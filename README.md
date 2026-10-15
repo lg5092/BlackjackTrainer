@@ -13,10 +13,10 @@ A simulated blackjack trainer that teaches beginners a basic, optimal strategy u
 - Responsive UI
 
 ## Tech Stack
-- Next.js -- frameworks and API routes
-- React/JavaScript -- game logic and user interface
-- Tailwind CSS - styling
-- Claude API -- AI explanations
+- Next.js: frameworks and API routes
+- React/JavaScript: game logic and user interface
+- Tailwind CSS: styling
+- Claude API: AI explanations
 
 ## How It Functions
 1. Press **Deal** to start a new hand
